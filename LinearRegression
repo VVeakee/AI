@@ -1,0 +1,64 @@
+import torch 
+import numpy as np
+import torch.nn as nn
+import torch.functional as F
+import matplotlib.pyplot as plt
+
+class LinearRegression(nn.Module):
+    
+    def __init__(self,in_feature,out_feature):
+        super(LinearRegression,self).__init__()
+        self.in_feature = in_feature
+        self.out_feature = out_feature
+        self.linear = nn.Linear(in_features=in_feature,out_features=out_feature)
+    
+    def forward(self,x):
+        return self.linear(x)
+
+
+# 生成一些点的数据
+# 点组成的图形类似 y=3x+10
+x = torch.unsqueeze(torch.linspace(-1, 1, 100), dim=1)
+y = 3*x + 10 + torch.rand(x.size())
+# 这两行可以先看下散点图
+# plt.scatter(x.data.numpy(), y.data.numpy())
+# plt.show() 
+
+# 生成一个LinearRegression类的实例linear_regression
+# 解释为什么传进去的是1，1
+# 第一个参数是输入的维度，第二个参数是输出的维度，x和y都是一维的
+linear_regression = LinearRegression(1,1)
+# 使用均方损失函数计算损失
+loss_fun = nn.MSELoss()
+# 优化器使用随机梯度下降算法
+optimizer = torch.optim.SGD(linear_regression.parameters(), lr=1e-2)
+
+
+num_epochs = 1000
+for epoch in range(num_epochs):
+    # 向前传播
+    out = linear_regression(x)
+    # 计算损失
+    loss = loss_fun(out, y)
+    # 每次迭代都需要梯度清零
+    optimizer.zero_grad()
+    # 反向传播
+    loss.backward()
+    # 更新权重参数
+    optimizer.step()
+    # 每20次打印一下损失
+    if (epoch+1) %20 == 0:
+        print('Epoch[{}/{}], loss:{:.6f}'.format(epoch+1, num_epochs, loss.data.item()))
+        
+# 不启用 BatchNormalization 和 Dropout,train()是启用 BatchNormalization 和 Dropout    
+linear_regression.eval()
+# 预测就是进行一次正向传播，这时得到的类型是tensor
+predict = linear_regression(x)
+# 把tensor转成ndarray格式
+predict = predict.data.numpy()
+# 显示离散的数据点
+plt.plot(x.numpy(), y.numpy(), 'ro', label='Original Data')
+# 显示预测的直线
+plt.plot(x.numpy(), predict, label='Fitting Line')
+
+plt.show()
